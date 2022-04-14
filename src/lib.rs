@@ -1,27 +1,10 @@
+mod point;
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use point::Point;
 
 type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-struct Point {
-  x: usize,
-  y: usize,
-}
-
-impl From<(usize, usize)> for Point {
-  fn from(input: (usize, usize)) -> Self {
-    Self {
-      x: input.0,
-      y: input.1,
-    }
-  }
-}
-
-impl Point {
-  pub fn new(x: usize, y: usize) -> Self {
-    Self { x, y }
-  }
-}
 
 #[derive(Debug, Default)]
 struct GameMap {
