@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Deref};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Point {
@@ -8,6 +8,7 @@ pub struct Point {
 
 const X: Point = Point::new(1, 0);
 const Y: Point = Point::new(0, 1);
+const ZERO: Point = Point::new(0, 0);
 
 impl From<(usize, usize)> for Point {
   fn from(input: (usize, usize)) -> Self {
@@ -35,8 +36,15 @@ impl Point {
     self.x < reference.x && self.y < reference.y
   }
 
-  pub fn get_points_arround(&self) -> Vec<Point> {
-    todo!()
+  pub fn get_points_around(&self) -> Vec<Point> {
+    let all = &[
+      Some(*self + X),
+      Some(*self + Y),
+      self.checked_sub(&X),
+      self.checked_sub(&Y),
+    ];
+
+    all.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
   }
 
   pub fn checked_sub(&self, rhs: &Point) -> Option<Point> {
@@ -48,7 +56,7 @@ impl Point {
 
 #[cfg(test)]
 mod tests {
-  use super::{Point, X, Y};
+  use super::{Point, X, Y, ZERO};
 
   #[test]
   fn is_contained() {
@@ -72,5 +80,13 @@ mod tests {
   fn checked_sub() {
     assert_eq!(X.checked_sub(&Y), None);
     assert_eq!(X.checked_sub(&X), Some(Point::new(0,0)));
+  }
+
+  #[test]
+  fn get_points_around() {
+    let points = ZERO.get_points_around();
+    assert_eq!(points.len(), 2);
+    assert_eq!(points.iter().find(|v| v.eq(&&X)).is_some(), true);
+    assert_eq!(points.iter().find(|v| v.eq(&&Y)).is_some(), true);
   }
 }
