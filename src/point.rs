@@ -1,8 +1,13 @@
+use std::ops::Add;
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Point {
   x: usize,
   y: usize,
 }
+
+const X: Point = Point::new(1, 0);
+const Y: Point = Point::new(0, 1);
 
 impl From<(usize, usize)> for Point {
   fn from(input: (usize, usize)) -> Self {
@@ -13,19 +18,31 @@ impl From<(usize, usize)> for Point {
   }
 }
 
+impl Add<Point> for Point {
+  type Output = Point;
+
+  fn add(self, rhs: Point) -> Self::Output {
+    Point::from((self.x + rhs.x, self.y + rhs.y))
+  }
+}
+
 impl Point {
-  pub fn new(x: usize, y: usize) -> Self {
+  pub const fn new(x: usize, y: usize) -> Self {
     Self { x, y }
   }
 
   pub fn is_contained_in(&self, reference: &Self) -> bool {
     self.x < reference.x && self.y < reference.y
   }
+
+  pub fn get_points_arround(&self) -> Vec<Point> {
+    todo!()
+  }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::Point;
+  use super::{Point, X, Y};
 
   #[test]
   fn is_contained() {
@@ -38,5 +55,10 @@ mod tests {
 
     let a = Point::new(2, 4);
     assert!(!a.is_contained_in(&ref_));
+  }
+
+  #[test]
+  fn add() {
+    assert_eq!(X + Y, Point::new(1,1))
   }
 }
