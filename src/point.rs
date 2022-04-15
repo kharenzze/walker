@@ -38,6 +38,12 @@ impl Point {
   pub fn get_points_arround(&self) -> Vec<Point> {
     todo!()
   }
+
+  pub fn checked_sub(&self, rhs: &Point) -> Option<Point> {
+    let x = self.x.checked_sub(rhs.x)?;
+    let y = self.y.checked_sub(rhs.y)?;
+    Some(Point::new(x, y))
+  }
 }
 
 #[cfg(test)]
@@ -60,5 +66,11 @@ mod tests {
   #[test]
   fn add() {
     assert_eq!(X + Y, Point::new(1,1))
+  }
+
+  #[test]
+  fn checked_sub() {
+    assert_eq!(X.checked_sub(&Y), None);
+    assert_eq!(X.checked_sub(&X), Some(Point::new(0,0)));
   }
 }
