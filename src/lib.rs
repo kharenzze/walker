@@ -6,6 +6,25 @@ use point::Point;
 
 type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
 
+pub struct AppConfig {
+  path: String,
+}
+
+impl AppConfig {
+  pub fn new(path: String) -> Self {
+    Self {
+      path
+    }
+  }
+}
+
+pub struct App;
+
+impl App {
+  pub fn run(config: AppConfig) {
+  }
+}
+
 #[derive(Debug, Default)]
 struct GameMap {
   data: Vec<Vec<char>>,
