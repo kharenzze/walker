@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use thiserror::Error;
 
-type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub struct AppConfig {
   path: String,
