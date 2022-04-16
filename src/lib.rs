@@ -38,6 +38,8 @@ struct GameMap {
 enum CellType {
   Wall,
   Floor,
+  Target,
+  Origin
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -53,6 +55,8 @@ impl TryFrom<char> for CellType {
     match value {
       '#' => Ok(CellType::Wall),
       '.' => Ok(CellType::Floor),
+      'x' => Ok(CellType::Target),
+      'o' => Ok(CellType::Origin),
       _ => Err(ConversionError::CellType(value)),
     }
   }
@@ -63,6 +67,8 @@ impl From<CellType> for char {
     match value {
       CellType::Wall => '#',
       CellType::Floor => '.',
+      CellType::Target => 'x',
+      CellType::Origin => 'o',
     }
   }
 }
