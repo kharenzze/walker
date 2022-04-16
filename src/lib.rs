@@ -1,5 +1,6 @@
 mod point;
 
+use indoc;
 use point::Point;
 use std::convert::TryFrom;
 use std::fmt::Display;
@@ -71,9 +72,7 @@ impl GameMap {
     let mut line_iter = reader.lines();
     let mut gm = GameMap::default();
     while let Some(Ok(l)) = line_iter.next() {
-      let v: Result<Vec<CellType>, _> = l.chars()
-      .map(|c| CellType::try_from(c))
-      .collect();
+      let v: Result<Vec<CellType>, _> = l.chars().map(|c| CellType::try_from(c)).collect();
       gm.data.push(v?);
     }
     gm.dimensions = Point::from((gm.data.len(), gm.data[0].len()));
@@ -83,18 +82,27 @@ impl GameMap {
 
 impl Display for GameMap {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    todo!()
+    for v in self.data.iter() {
+      let text: String = v.iter().map(|c| char::from(*c)).collect();
+      writeln!(f, "{}", &text)?;
+    }
+    Ok(())
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::{CellType, GameMap, Point, ConversionError};
+  use indoc::indoc;
+
+  use crate::{CellType, ConversionError, GameMap, Point};
+
+  fn get_simple_gm() -> GameMap {
+    GameMap::read_from_path("./resources/map_simple.map").expect("map should be read properly")
+  }
 
   #[test]
   fn read_simple_map() {
-    let gm =
-      GameMap::read_from_path("./resources/map_simple.map").expect("map should be read properly");
+    let gm = get_simple_gm();
     assert_eq!(gm.dimensions, Point::new(4, 4));
   }
 
@@ -109,5 +117,19 @@ mod tests {
     assert_eq!(Ok(CellType::Floor), cell);
     let cell = CellType::try_from('K');
     assert_eq!(Err(ConversionError::CellType('K')), cell);
+  }
+
+  #[test]
+  fn display() {
+    let gm = get_simple_gm();
+    let text = format!("{}", gm);
+    let expected_text = indoc! { r#"
+    ####
+    #..#
+    #..#
+    ####
+    "#
+    };
+    assert_eq!(&text, expected_text);
   }
 }
