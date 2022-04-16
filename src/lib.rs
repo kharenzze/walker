@@ -27,7 +27,7 @@ impl App {
 
 #[derive(Debug, Default)]
 struct GameMap {
-  data: Vec<Vec<char>>,
+  data: Vec<Vec<CellType>>,
   dimensions: Point,
 }
 
@@ -71,8 +71,10 @@ impl GameMap {
     let mut line_iter = reader.lines();
     let mut gm = GameMap::default();
     while let Some(Ok(l)) = line_iter.next() {
-      let v: Vec<char> = l.chars().collect();
-      gm.data.push(v);
+      let v: Result<Vec<CellType>, _> = l.chars()
+      .map(|c| CellType::try_from(c))
+      .collect();
+      gm.data.push(v?);
     }
     gm.dimensions = Point::from((gm.data.len(), gm.data[0].len()));
     Ok(gm)
