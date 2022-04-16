@@ -2,8 +2,8 @@ use std::ops::{Add, Deref};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Point {
-  x: usize,
-  y: usize,
+  pub x: usize,
+  pub y: usize,
 }
 
 const X: Point = Point::new(1, 0);
