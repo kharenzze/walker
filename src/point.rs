@@ -36,6 +36,10 @@ impl Point {
     self.x < reference.x && self.y < reference.y
   }
 
+  pub fn contains(&self, other: &Self) -> bool {
+    self.x > other.x && self.y > other.y
+  }
+
   pub fn get_points_around(&self) -> Vec<Point> {
     let all = &[
       Some(*self + X),
@@ -69,6 +73,17 @@ mod tests {
 
     let a = Point::new(2, 4);
     assert!(!a.is_contained_in(&ref_));
+  }
+
+  #[test]
+  fn contains() {
+    let ref_ = Point::new(4, 4);
+    let a = Point::new(2, 2);
+    assert!(!a.contains(&ref_));
+    assert!(ref_.contains(&a));
+
+    let a = Point::new(4, 2);
+    assert!(!a.contains(&ref_));
   }
 
   #[test]
