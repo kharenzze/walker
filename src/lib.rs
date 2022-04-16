@@ -1,6 +1,5 @@
 mod point;
 
-use indoc;
 use point::Point;
 use std::convert::TryFrom;
 use std::fmt::Display;
@@ -23,7 +22,10 @@ impl AppConfig {
 pub struct App;
 
 impl App {
-  pub fn run(config: AppConfig) {}
+  pub fn run(config: AppConfig) -> DynResult<()> {
+    let gm = GameMap::read_from_path(&config.path)?;
+    Ok(())
+  }
 }
 
 #[derive(Debug, Default)]
@@ -78,6 +80,13 @@ impl GameMap {
     gm.dimensions = Point::from((gm.data.len(), gm.data[0].len()));
     Ok(gm)
   }
+
+  fn get_point(&self, p: Point) -> Option<&CellType> {
+    if !self.dimensions.contains(&p) {
+      return None;
+    }
+    self.data.get(p.x).unwrap().get(p.y)
+  }
 }
 
 impl Display for GameMap {
@@ -131,5 +140,17 @@ mod tests {
     "#
     };
     assert_eq!(&text, expected_text);
+  }
+
+  #[test]
+  fn get_point() {
+    let gm = get_simple_gm();
+    let p = Point::new(0, 0);
+    let cell =  gm.get_point(p);
+    assert_eq!(cell, Some(&CellType::Wall));
+
+    let p = Point::new(100, 0);
+    let cell =  gm.get_point(p);
+    assert_eq!(cell, None);
   }
 }
