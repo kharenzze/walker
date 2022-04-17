@@ -39,13 +39,25 @@ enum CellType {
   Wall,
   Floor,
   Target,
-  Origin
+  Origin,
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
 enum ConversionError {
   #[error("Could not convert char '{0}' into CellType")]
   CellType(char),
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+enum GameMapError {
+  #[error("Found more than one target")]
+  MoreThanOneTarget,
+  #[error("Missing target")]
+  MissingTarget,
+  #[error("Found more than one origin")]
+  MoreThanOneOrigin,
+  #[error("Missing origin")]
+  MissingOrigin,
 }
 
 impl TryFrom<char> for CellType {
@@ -79,11 +91,40 @@ impl GameMap {
     let reader = BufReader::new(f);
     let mut line_iter = reader.lines();
     let mut gm = GameMap::default();
+    let mut target: Option<Point> = None;
+    let mut origin: Option<Point> = None;
+    let mut row = 0_usize;
     while let Some(Ok(l)) = line_iter.next() {
       let v: Result<Vec<CellType>, _> = l.chars().map(|c| CellType::try_from(c)).collect();
-      gm.data.push(v?);
+      let v = v?;
+      for (col, cell) in v.iter().enumerate() {
+        match cell {
+          &CellType::Target => {
+            if target.is_none() {
+              target = Some(Point::new(row, col));
+            } else {
+              Err(GameMapError::MoreThanOneTarget)?;
+            }
+          }
+          &CellType::Origin => {
+            if origin.is_none() {
+              origin = Some(Point::new(row, col));
+            } else {
+              Err(GameMapError::MoreThanOneOrigin)?;
+            }
+          }
+          _ => (),
+        }
+      }
+      gm.data.push(v);
     }
     gm.dimensions = Point::from((gm.data.len(), gm.data[0].len()));
+    if target.is_none() {
+      Err(GameMapError::MissingTarget)?;
+    }
+    if origin.is_none() {
+      Err(GameMapError::MissingOrigin)?;
+    }
     Ok(gm)
   }
 
@@ -152,11 +193,11 @@ mod tests {
   fn get_point() {
     let gm = get_simple_gm();
     let p = Point::new(0, 0);
-    let cell =  gm.get_point(p);
+    let cell = gm.get_point(p);
     assert_eq!(cell, Some(&CellType::Wall));
 
     let p = Point::new(100, 0);
-    let cell =  gm.get_point(p);
+    let cell = gm.get_point(p);
     assert_eq!(cell, None);
   }
 }
