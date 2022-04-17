@@ -150,16 +150,32 @@ impl Display for GameMap {
 mod tests {
   use indoc::indoc;
 
-  use crate::{CellType, ConversionError, GameMap, Point};
+  use crate::{CellType, ConversionError, DynResult, GameMap, Point};
 
-  fn get_simple_gm() -> GameMap {
-    GameMap::read_from_path("./resources/map_simple.map").expect("map should be read properly")
+  fn get_simple_gm() -> DynResult<GameMap> {
+    GameMap::read_from_path("./resources/map_simple.map")
+  }
+
+  fn get_double_origin_gm() -> DynResult<GameMap> {
+    GameMap::read_from_path("./resources/double_origin.map")
+  }
+
+  fn get_missing_target_gm() -> DynResult<GameMap> {
+    GameMap::read_from_path("./resources/missing_target.map")
   }
 
   #[test]
   fn read_simple_map() {
     let gm = get_simple_gm();
+    assert!(gm.is_ok());
+    let gm = gm.unwrap();
     assert_eq!(gm.dimensions, Point::new(4, 4));
+
+    let gm = get_double_origin_gm();
+    assert!(gm.is_err());
+
+    let gm = get_missing_target_gm();
+    assert!(gm.is_err());
   }
 
   #[test]
@@ -177,12 +193,12 @@ mod tests {
 
   #[test]
   fn display() {
-    let gm = get_simple_gm();
+    let gm = get_simple_gm().unwrap();
     let text = format!("{}", gm);
     let expected_text = indoc! { r#"
     ####
-    #..#
-    #..#
+    #.x#
+    #o.#
     ####
     "#
     };
@@ -191,7 +207,7 @@ mod tests {
 
   #[test]
   fn get_point() {
-    let gm = get_simple_gm();
+    let gm = get_simple_gm().unwrap();
     let p = Point::new(0, 0);
     let cell = gm.get_point(p);
     assert_eq!(cell, Some(&CellType::Wall));
