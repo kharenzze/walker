@@ -48,13 +48,21 @@ impl Point {
       self.checked_sub(&Y),
     ];
 
-    all.iter().filter(|v| v.is_some()).map(|v| v.unwrap()).collect()
+    all
+      .iter()
+      .filter(|v| v.is_some())
+      .map(|v| v.unwrap())
+      .collect()
   }
 
   pub fn checked_sub(&self, rhs: &Point) -> Option<Point> {
     let x = self.x.checked_sub(rhs.x)?;
     let y = self.y.checked_sub(rhs.y)?;
     Some(Point::new(x, y))
+  }
+
+  pub fn squared_norm(&self) -> usize {
+    self.x * self.x + self.y * self.y
   }
 }
 
@@ -88,13 +96,13 @@ mod tests {
 
   #[test]
   fn add() {
-    assert_eq!(X + Y, Point::new(1,1))
+    assert_eq!(X + Y, Point::new(1, 1))
   }
 
   #[test]
   fn checked_sub() {
     assert_eq!(X.checked_sub(&Y), None);
-    assert_eq!(X.checked_sub(&X), Some(Point::new(0,0)));
+    assert_eq!(X.checked_sub(&X), Some(Point::new(0, 0)));
   }
 
   #[test]
@@ -103,5 +111,12 @@ mod tests {
     assert_eq!(points.len(), 2);
     assert_eq!(points.iter().find(|v| v.eq(&&X)).is_some(), true);
     assert_eq!(points.iter().find(|v| v.eq(&&Y)).is_some(), true);
+  }
+
+  #[test]
+  fn squared_norm() {
+    assert_eq!(ZERO.squared_norm(), 0);
+    let p = Point::new(3, 3);
+    assert_eq!(p.squared_norm(), 9 + 9);
   }
 }
