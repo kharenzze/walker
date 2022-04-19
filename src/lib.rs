@@ -45,6 +45,13 @@ enum CellType {
   Origin,
 }
 
+impl CellType {
+  #[inline]
+  fn is_target(&self) -> bool {
+    self == &CellType::Target
+  }
+}
+
 #[derive(Debug, Error, PartialEq, Eq)]
 enum ConversionError {
   #[error("Could not convert char '{0}' into CellType")]
@@ -141,7 +148,7 @@ impl GameMap {
   }
 
   #[inline]
-  fn distance_to_target(&self, p:Point) -> usize {
+  fn distance_to_target(&self, p: Point) -> usize {
     self.target.squared_distance(p)
   }
 
@@ -158,10 +165,45 @@ impl GameMap {
     let origin_cost = CostMetric {
       parent: self.origin,
       to_origin: 0,
-      heuristic: self.distance_to_target(self.origin)
+      heuristic: self.distance_to_target(self.origin),
+      opened: true,
     };
     cache.insert(self.origin, origin_cost);
 
+    while let Some(p) = opened.pop() {
+      let next_points: Vec<Point> = self
+        .origin
+        .get_points_around()
+        .iter()
+        .filter_map(|p| *p)
+        .filter(|p| self.dimensions.contains(p))
+        .collect();
+      let current_cost = cache.get_mut(&p).unwrap();
+      let next_dist = current_cost.to_origin + 1;
+      current_cost.opened = false;
+      drop(current_cost);
+      for next_p in next_points {
+        let cell = self.get_point(next_p).unwrap();
+        todo!();
+        let cached_cost = cache.get_mut(&next_p);
+        if cached_cost.is_none() {
+          let computed = CostMetric {
+            opened: true,
+            parent: next_p,
+            to_origin: next_dist,
+            heuristic: self.distance_to_target(next_p)
+          };
+          cache.insert(next_p, computed);
+          opened.push(next_p);
+        } else {
+          let cost = cached_cost.unwrap();
+          if cost.opened && cost.to_origin < next_dist {
+            cost.to_origin = next_dist;
+            cost.parent = next_p;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -170,6 +212,14 @@ struct CostMetric {
   to_origin: usize,
   parent: Point,
   heuristic: usize,
+  opened: bool,
+}
+
+impl CostMetric {
+  #[inline]
+  fn cost(&self) -> usize {
+    self.heuristic + self.to_origin
+  }
 }
 
 impl Display for GameMap {
