@@ -40,19 +40,13 @@ impl Point {
     self.x > other.x && self.y > other.y
   }
 
-  pub fn get_points_around(&self) -> Vec<Point> {
-    let all = &[
+  pub fn get_points_around(&self) -> [Option<Point>; 4] {
+    [
       Some(*self + X),
       Some(*self + Y),
       self.checked_sub(&X),
       self.checked_sub(&Y),
-    ];
-
-    all
-      .iter()
-      .filter(|v| v.is_some())
-      .map(|v| v.unwrap())
-      .collect()
+    ]
   }
 
   pub fn checked_sub(&self, rhs: &Point) -> Option<Point> {
@@ -63,6 +57,20 @@ impl Point {
 
   pub fn squared_norm(&self) -> usize {
     self.x * self.x + self.y * self.y
+  }
+
+  pub fn squared_distance(&self, p: Point) -> usize {
+    let x = usize_diff(self.x, p.x);
+    let y = usize_diff(self.y, p.y);
+    Point::new(x, y).squared_norm()
+  }
+}
+
+fn usize_diff(a: usize, b: usize) -> usize {
+  if a > b {
+    a - b
+  } else {
+    b - a
   }
 }
 
@@ -109,8 +117,8 @@ mod tests {
   fn get_points_around() {
     let points = ZERO.get_points_around();
     assert_eq!(points.len(), 2);
-    assert_eq!(points.iter().find(|v| v.eq(&&X)).is_some(), true);
-    assert_eq!(points.iter().find(|v| v.eq(&&Y)).is_some(), true);
+    assert_eq!(points.iter().find(|v| v.eq(&&Some(X))).is_some(), true);
+    assert_eq!(points.iter().find(|v| v.eq(&&Some(Y))).is_some(), true);
   }
 
   #[test]
@@ -118,5 +126,13 @@ mod tests {
     assert_eq!(ZERO.squared_norm(), 0);
     let p = Point::new(3, 3);
     assert_eq!(p.squared_norm(), 9 + 9);
+  }
+
+  #[test]
+  fn usize_diff() {
+    let p = Point::new(2,2);
+    let dist = p.squared_distance(ZERO);
+    assert_eq!(dist, ZERO.squared_distance(p));
+    assert_eq!(dist, p.squared_norm());
   }
 }
