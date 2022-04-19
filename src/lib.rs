@@ -1,6 +1,7 @@
 mod point;
 
 use point::Point;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fs::File;
@@ -32,6 +33,8 @@ impl App {
 struct GameMap {
   data: Vec<Vec<CellType>>,
   dimensions: Point,
+  target: Point,
+  origin: Point,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,6 +128,8 @@ impl GameMap {
     if origin.is_none() {
       Err(GameMapError::MissingOrigin)?;
     }
+    gm.target = target.unwrap();
+    gm.origin = origin.unwrap();
     Ok(gm)
   }
 
@@ -134,6 +139,37 @@ impl GameMap {
     }
     self.data.get(p.x).unwrap().get(p.y)
   }
+
+  #[inline]
+  fn distance_to_target(&self, p:Point) -> usize {
+    self.target.squared_distance(p)
+  }
+
+  pub fn solve(&self) {
+    /*
+    let mut opened: Vec<Point> = self.origin.get_points_around()
+      .iter()
+      .filter_map(|p| *p)
+      .filter(|p| self.dimensions.contains(p))
+      .collect();
+    */
+    let mut cache: HashMap<Point, CostMetric> = HashMap::new();
+    let mut opened: Vec<Point> = vec![self.origin];
+    let origin_cost = CostMetric {
+      parent: self.origin,
+      to_origin: 0,
+      heuristic: self.distance_to_target(self.origin)
+    };
+    cache.insert(self.origin, origin_cost);
+
+  }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct CostMetric {
+  to_origin: usize,
+  parent: Point,
+  heuristic: usize,
 }
 
 impl Display for GameMap {
@@ -215,5 +251,11 @@ mod tests {
     let p = Point::new(100, 0);
     let cell = gm.get_point(p);
     assert_eq!(cell, None);
+  }
+
+  #[test]
+  fn solve() {
+    let gm = get_simple_gm().unwrap();
+    gm.solve();
   }
 }
