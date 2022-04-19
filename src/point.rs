@@ -1,6 +1,6 @@
-use std::ops::{Add, Deref};
+use std::ops::Add;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Point {
   pub x: usize,
   pub y: usize,
@@ -130,7 +130,7 @@ mod tests {
 
   #[test]
   fn usize_diff() {
-    let p = Point::new(2,2);
+    let p = Point::new(2, 2);
     let dist = p.squared_distance(ZERO);
     assert_eq!(dist, ZERO.squared_distance(p));
     assert_eq!(dist, p.squared_norm());
