@@ -6,6 +6,7 @@ use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::{Deref, DerefMut};
 use thiserror::Error;
 
 pub type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
@@ -50,6 +51,11 @@ impl CellType {
   fn is_target(&self) -> bool {
     self == &CellType::Target
   }
+
+  #[inline]
+  fn can_traverse(&self) -> bool {
+    self == &CellType::Floor || self.is_target()
+  }
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -68,6 +74,8 @@ enum GameMapError {
   MoreThanOneOrigin,
   #[error("Missing origin")]
   MissingOrigin,
+  #[error("Could not find a path")]
+  CouldNotFindPath,
 }
 
 impl TryFrom<char> for CellType {
@@ -127,6 +135,7 @@ impl GameMap {
         }
       }
       gm.data.push(v);
+      row += 1;
     }
     gm.dimensions = Point::from((gm.data.len(), gm.data[0].len()));
     if target.is_none() {
@@ -152,15 +161,8 @@ impl GameMap {
     self.target.squared_distance(p)
   }
 
-  pub fn solve(&self) {
-    /*
-    let mut opened: Vec<Point> = self.origin.get_points_around()
-      .iter()
-      .filter_map(|p| *p)
-      .filter(|p| self.dimensions.contains(p))
-      .collect();
-    */
-    let mut cache: HashMap<Point, CostMetric> = HashMap::new();
+  pub fn solve(&self) -> Result<Path, GameMapError> {
+    let mut cache: CostCache = Default::default();
     let mut opened: Vec<Point> = vec![self.origin];
     let origin_cost = CostMetric {
       parent: self.origin,
@@ -169,29 +171,39 @@ impl GameMap {
       opened: true,
     };
     cache.insert(self.origin, origin_cost);
+    let mut target_cost: Option<CostMetric> = None;
 
     while let Some(p) = opened.pop() {
-      let next_points: Vec<Point> = self
-        .origin
+      let next_points: Vec<Point> = p
         .get_points_around()
         .iter()
         .filter_map(|p| *p)
         .filter(|p| self.dimensions.contains(p))
+        .filter(|p| self.get_point(*p).unwrap().can_traverse())
         .collect();
       let current_cost = cache.get_mut(&p).unwrap();
       let next_dist = current_cost.to_origin + 1;
       current_cost.opened = false;
-      drop(current_cost);
       for next_p in next_points {
         let cell = self.get_point(next_p).unwrap();
-        todo!();
+        if cell.is_target() {
+          let computed = CostMetric {
+            opened: false,
+            parent: p,
+            to_origin: next_dist,
+            heuristic: 0,
+          };
+          target_cost = Some(computed);
+          cache.insert(next_p, computed);
+          break;
+        }
         let cached_cost = cache.get_mut(&next_p);
         if cached_cost.is_none() {
           let computed = CostMetric {
             opened: true,
-            parent: next_p,
+            parent: p,
             to_origin: next_dist,
-            heuristic: self.distance_to_target(next_p)
+            heuristic: self.distance_to_target(next_p),
           };
           cache.insert(next_p, computed);
           opened.push(next_p);
@@ -203,7 +215,51 @@ impl GameMap {
           }
         }
       }
+      if target_cost.is_some() {
+        break;
+      }
     }
+    if target_cost.is_none() {
+      return Err(GameMapError::CouldNotFindPath);
+    }
+    cache
+      .get_reverse_path(self.target)
+      .ok_or(GameMapError::CouldNotFindPath)
+  }
+}
+
+#[derive(Debug, Default)]
+struct CostCache(HashMap<Point, CostMetric>);
+
+impl Deref for CostCache {
+  type Target = HashMap<Point, CostMetric>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl DerefMut for CostCache {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
+  }
+}
+
+type Path = Vec<Point>;
+
+impl CostCache {
+  fn get_reverse_path(&self, end: Point) -> Option<Path> {
+    let mut path: Path = vec![end];
+    let mut p = end;
+    loop {
+      let cost = self.get(&p)?;
+      if cost.parent == p {
+        break;
+      }
+      path.push(p);
+      p = cost.parent;
+    }
+    Some(path)
   }
 }
 
@@ -256,6 +312,8 @@ mod tests {
     assert!(gm.is_ok());
     let gm = gm.unwrap();
     assert_eq!(gm.dimensions, Point::new(4, 4));
+    assert_eq!(gm.origin, Point::new(2, 1));
+    assert_eq!(gm.target, Point::new(1, 2));
 
     let gm = get_double_origin_gm();
     assert!(gm.is_err());
@@ -306,6 +364,7 @@ mod tests {
   #[test]
   fn solve() {
     let gm = get_simple_gm().unwrap();
-    gm.solve();
+    let path = gm.solve().unwrap();
+    assert_eq!(path.len(), 3)
   }
 }
