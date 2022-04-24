@@ -1,9 +1,9 @@
 mod point;
 
 use point::Point;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::ops::{Deref, DerefMut};
@@ -245,11 +245,48 @@ impl DerefMut for CostCache {
   }
 }
 
-type Path = Vec<Point>;
+type PathInner = Vec<Point>;
+
+struct Path {
+  inner: PathInner,
+}
+
+impl Deref for Path {
+  type Target = PathInner;
+
+  fn deref(&self) -> &Self::Target {
+    &self.inner
+  }
+}
+
+impl DerefMut for Path {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.inner
+  }
+}
+
+impl Path {
+  fn new(vec: PathInner) -> Self {
+    Self { inner: vec }
+  }
+
+  fn to_point_set(&self) -> HashSet<Point> {
+    HashSet::from_iter(self.inner.iter().map(|p| *p))
+  }
+}
+
+impl Display for Path {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    for p in self.inner.iter() {
+      writeln!(f, "{}", p)?;
+    }
+    Ok(())
+  }
+}
 
 impl CostCache {
   fn get_reverse_path(&self, end: Point) -> Option<Path> {
-    let mut path: Path = vec![end];
+    let mut path: Path = Path::new(vec![end]);
     let mut p = end;
     loop {
       let cost = self.get(&p)?;
@@ -372,6 +409,6 @@ mod tests {
     assert_eq!(path.len(), 3);
     let gm = get_medium_gm().unwrap();
     let path = gm.solve().unwrap();
-    println!("{:?}", &path)
+    println!("{}", &path)
   }
 }
