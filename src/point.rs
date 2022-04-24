@@ -146,7 +146,7 @@ mod tests {
   #[test]
   fn display() {
     let text = format!("{}", &ZERO);
-    let expected = format!("({}, {})", ZERO.x, ZERO.y);
+    let expected = "(0, 0)";
     assert_eq!(text, expected);
   }
 }
