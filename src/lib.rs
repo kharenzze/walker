@@ -256,8 +256,8 @@ impl CostCache {
       if cost.parent == p {
         break;
       }
-      path.push(p);
       p = cost.parent;
+      path.push(p);
     }
     Some(path)
   }
@@ -296,6 +296,10 @@ mod tests {
 
   fn get_simple_gm() -> DynResult<GameMap> {
     GameMap::read_from_path("./resources/map_simple.map")
+  }
+
+  fn get_medium_gm() -> DynResult<GameMap> {
+    GameMap::read_from_path("./resources/medium.map")
   }
 
   fn get_double_origin_gm() -> DynResult<GameMap> {
@@ -365,6 +369,9 @@ mod tests {
   fn solve() {
     let gm = get_simple_gm().unwrap();
     let path = gm.solve().unwrap();
-    assert_eq!(path.len(), 3)
+    assert_eq!(path.len(), 3);
+    let gm = get_medium_gm().unwrap();
+    let path = gm.solve().unwrap();
+    println!("{:?}", &path)
   }
 }
