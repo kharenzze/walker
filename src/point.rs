@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -9,6 +10,12 @@ pub struct Point {
 const X: Point = Point::new(1, 0);
 const Y: Point = Point::new(0, 1);
 const ZERO: Point = Point::new(0, 0);
+
+impl Display for Point {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "({}, {})", self.x, self.y)
+  }
+}
 
 impl From<(usize, usize)> for Point {
   fn from(input: (usize, usize)) -> Self {
@@ -134,5 +141,12 @@ mod tests {
     let dist = p.squared_distance(ZERO);
     assert_eq!(dist, ZERO.squared_distance(p));
     assert_eq!(dist, p.squared_norm());
+  }
+
+  #[test]
+  fn display() {
+    let text = format!("{}", &ZERO);
+    let expected = format!("({}, {})", ZERO.x, ZERO.y);
+    assert_eq!(text, expected);
   }
 }
