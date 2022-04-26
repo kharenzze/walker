@@ -30,12 +30,25 @@ impl App {
   }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+enum GameMapStatus {
+  Unsolved,
+  Solved,
+}
+
+impl Default for GameMapStatus {
+  fn default() -> Self {
+    Self::Unsolved
+  }
+}
+
 #[derive(Debug, Default)]
 struct GameMap {
   data: Vec<Vec<CellType>>,
   dimensions: Point,
   target: Point,
   origin: Point,
+  status: GameMapStatus,
   path: Option<Path>,
 }
 
@@ -78,6 +91,8 @@ enum GameMapError {
   MissingOrigin,
   #[error("Could not find a path")]
   CouldNotFindPath,
+  #[error("Already solved")]
+  AlreadySolved,
 }
 
 impl TryFrom<char> for CellType {
@@ -165,6 +180,9 @@ impl GameMap {
   }
 
   pub fn solve(&mut self) -> Result<(), GameMapError> {
+    if self.status == GameMapStatus::Solved {
+      return Err(GameMapError::AlreadySolved);
+    }
     let mut cache: CostCache = Default::default();
     let mut opened: Vec<Point> = vec![self.origin];
     let origin_cost = CostMetric {
