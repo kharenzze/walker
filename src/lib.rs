@@ -36,6 +36,7 @@ struct GameMap {
   dimensions: Point,
   target: Point,
   origin: Point,
+  path: Option<Path>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,6 +45,7 @@ enum CellType {
   Floor,
   Target,
   Origin,
+  Path,
 }
 
 impl CellType {
@@ -99,6 +101,7 @@ impl From<CellType> for char {
       CellType::Floor => '.',
       CellType::Target => 'x',
       CellType::Origin => 'o',
+      CellType::Path => '*',
     }
   }
 }
@@ -161,7 +164,7 @@ impl GameMap {
     self.target.squared_distance(p)
   }
 
-  pub fn solve(&self) -> Result<Path, GameMapError> {
+  pub fn solve(&mut self) -> Result<(), GameMapError> {
     let mut cache: CostCache = Default::default();
     let mut opened: Vec<Point> = vec![self.origin];
     let origin_cost = CostMetric {
@@ -222,9 +225,12 @@ impl GameMap {
     if target_cost.is_none() {
       return Err(GameMapError::CouldNotFindPath);
     }
-    cache
-      .get_reverse_path(self.target)
-      .ok_or(GameMapError::CouldNotFindPath)
+    if let Some(path) = cache.get_reverse_path(self.target) {
+      self.path = Some(path);
+    } else {
+      return Err(GameMapError::CouldNotFindPath);
+    }
+    Ok(())
   }
 }
 
@@ -247,6 +253,7 @@ impl DerefMut for CostCache {
 
 type PathInner = Vec<Point>;
 
+#[derive(Debug, Default)]
 struct Path {
   inner: PathInner,
 }
@@ -317,8 +324,23 @@ impl CostMetric {
 
 impl Display for GameMap {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let set_opt = self.path.as_ref().map(|p| p.to_point_set());
+    let mut x: usize = 0;
     for v in self.data.iter() {
-      let text: String = v.iter().map(|c| char::from(*c)).collect();
+      let text: String = v
+        .iter()
+        .enumerate()
+        .map(|(y, c)| {
+          if let Some(set) = set_opt.as_ref() {
+            let p = Point::new(x, y);
+            if set.contains(&p) {
+              return char::from(CellType::Path);
+            }
+          }
+          char::from(*c)
+        })
+        .collect();
+
       writeln!(f, "{}", &text)?;
     }
     Ok(())
@@ -404,11 +426,12 @@ mod tests {
 
   #[test]
   fn solve() {
-    let gm = get_simple_gm().unwrap();
-    let path = gm.solve().unwrap();
+    let mut gm = get_simple_gm().unwrap();
+    gm.solve();
+    let path = gm.path.unwrap();
     assert_eq!(path.len(), 3);
-    let gm = get_medium_gm().unwrap();
-    let path = gm.solve().unwrap();
-    println!("{}", &path)
+    let mut gm = get_medium_gm().unwrap();
+    gm.solve();
+    println!("{}", &gm)
   }
 }
