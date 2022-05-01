@@ -1,7 +1,7 @@
 mod point;
 
 use point::Point;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -192,6 +192,7 @@ impl GameMap {
       to_origin: 0,
       heuristic: self.distance_to_target(self.origin),
       opened: true,
+      point: self.origin,
     };
     cache.insert(self.origin, origin_cost);
     let mut target_cost: Option<CostMetric> = None;
@@ -215,6 +216,7 @@ impl GameMap {
             parent: p,
             to_origin: next_dist,
             heuristic: 0,
+            point: next_p,
           };
           target_cost = Some(computed);
           cache.insert(next_p, computed);
@@ -227,6 +229,7 @@ impl GameMap {
             parent: p,
             to_origin: next_dist,
             heuristic: self.distance_to_target(next_p),
+            point: next_p,
           };
           cache.insert(next_p, computed);
           opened.push(next_p);
@@ -329,6 +332,7 @@ impl CostCache {
 
 #[derive(Debug, Default, Clone, Copy)]
 struct CostMetric {
+  point: Point,
   to_origin: usize,
   parent: Point,
   heuristic: usize,
