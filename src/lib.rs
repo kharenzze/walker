@@ -25,7 +25,9 @@ pub struct App;
 
 impl App {
   pub fn run(config: AppConfig) -> DynResult<()> {
-    let gm = GameMap::read_from_path(&config.path)?;
+    let mut gm = GameMap::read_from_path(&config.path)?;
+    gm.solve();
+    println!("{}", &gm);
     Ok(())
   }
 }
@@ -343,22 +345,20 @@ impl CostMetric {
 impl Display for GameMap {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let set_opt = self.path.as_ref().map(|p| p.to_point_set());
-    let mut x: usize = 0;
-    for v in self.data.iter() {
-      let text: String = v
-        .iter()
-        .enumerate()
-        .map(|(y, c)| {
-          if let Some(set) = set_opt.as_ref() {
-            let p = Point::new(x, y);
-            if set.contains(&p) {
-              return char::from(CellType::Path);
-            }
+    let mut line_text: Vec<char> = vec!['.'; self.dimensions.y];
+    for x in 0..self.dimensions.x {
+      for y in 0..self.dimensions.y {
+        let p = Point::new(x, y);
+        if let Some(set) = set_opt.as_ref() {
+          if set.contains(&p) {
+            line_text[y] = char::from(CellType::Path);
+            continue;
           }
-          char::from(*c)
-        })
-        .collect();
-
+        }
+        let cell = self.get_point(p).unwrap();
+        line_text[y] = char::from(*cell);
+      }
+      let text: String = line_text.iter().collect();
       writeln!(f, "{}", &text)?;
     }
     Ok(())
