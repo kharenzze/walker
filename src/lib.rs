@@ -1,12 +1,14 @@
 mod point;
 
 use point::Point;
+use std::cell::RefCell;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 use thiserror::Error;
 
 pub type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
@@ -194,7 +196,7 @@ impl GameMap {
       opened: true,
       point: self.origin,
     };
-    cache.insert(self.origin, origin_cost);
+    cache.insert(self.origin, origin_cost.wrap());
     let mut target_cost: Option<CostMetric> = None;
 
     while let Some(p) = opened.pop() {
@@ -205,9 +207,10 @@ impl GameMap {
         .filter(|p| self.dimensions.contains(p))
         .filter(|p| self.get_point(*p).unwrap().can_traverse())
         .collect();
-      let current_cost = cache.get_mut(&p).unwrap();
+      let mut current_cost = cache.get(&p).unwrap().borrow_mut();
       let next_dist = current_cost.to_origin + 1;
       current_cost.opened = false;
+      drop(current_cost);
       for next_p in next_points {
         let cell = self.get_point(next_p).unwrap();
         if cell.is_target() {
@@ -219,7 +222,7 @@ impl GameMap {
             point: next_p,
           };
           target_cost = Some(computed);
-          cache.insert(next_p, computed);
+          cache.insert(next_p, computed.wrap());
           break;
         }
         let cached_cost = cache.get_mut(&next_p);
@@ -231,10 +234,10 @@ impl GameMap {
             heuristic: self.distance_to_target(next_p),
             point: next_p,
           };
-          cache.insert(next_p, computed);
+          cache.insert(next_p, computed.wrap());
           opened.push(next_p);
         } else {
-          let cost = cached_cost.unwrap();
+          let mut cost = cached_cost.unwrap().borrow_mut();
           if cost.opened && cost.to_origin < next_dist {
             cost.to_origin = next_dist;
             cost.parent = next_p;
@@ -257,11 +260,12 @@ impl GameMap {
   }
 }
 
+type InnerCostCache = HashMap<Point, Rc<RefCell<CostMetric>>>;
 #[derive(Debug, Default)]
-struct CostCache(HashMap<Point, CostMetric>);
+struct CostCache(InnerCostCache);
 
 impl Deref for CostCache {
-  type Target = HashMap<Point, CostMetric>;
+  type Target = InnerCostCache;
 
   fn deref(&self) -> &Self::Target {
     &self.0
@@ -319,7 +323,7 @@ impl CostCache {
     let mut path: Path = Path::new(vec![end]);
     let mut p = end;
     loop {
-      let cost = self.get(&p)?;
+      let cost = self.get(&p)?.borrow();
       if cost.parent == p {
         break;
       }
@@ -343,6 +347,10 @@ impl CostMetric {
   #[inline]
   fn cost(&self) -> usize {
     self.heuristic + self.to_origin
+  }
+  #[inline]
+  fn wrap(self) -> Rc<RefCell<Self>> {
+    Rc::new(RefCell::new(self))
   }
 }
 
